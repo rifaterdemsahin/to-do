@@ -34,16 +34,33 @@ Then point the frontend at it: in `5_Symbols/app/config.js` set
 
 ## Deploy to Fly.io
 
+**Already deployed:** https://daypilot-rifat.fly.dev (app `daypilot-rifat`, region `lhr`,
+`min_machines_running = 0` so it auto-stops when idle). The frontend default
+(`5_Symbols/app/config.example.js`) already points at it.
+
+First-time setup (for reference / a fresh app):
+
 ```bash
-fly launch --no-deploy            # first time, accept the bundled fly.toml
+fly apps create daypilot-rifat -o personal
 fly secrets set \
   ANTHROPIC_API_KEY="$(az keyvault secret show --vault-name dp-kv-deliverypilot --name ANTHROPIC-API-KEY --query value -o tsv)" \
-  ALLOW_ORIGIN="https://rifaterdemsahin.github.io"
-fly deploy
+  ALLOW_ORIGIN="https://rifaterdemsahin.github.io" \
+  --app daypilot-rifat
+fly deploy --remote-only --app daypilot-rifat
 ```
+
+Redeploy after a code change: `fly deploy --remote-only --app daypilot-rifat`.
 
 Secrets come from Azure Key Vault `dp-kv-deliverypilot` (`ANTHROPIC-API-KEY`, optionally
 `supabase-service-key`). Never commit them — see root `.env` / `.env.example`.
+
+### ⚠️ Cost note
+
+The endpoint has no auth (lean MVP). CORS is restricted to the GitHub Pages origin, which
+stops *browser* abuse from other sites, but anyone hitting the URL server-side can spend
+Claude credits. Mitigations in place: idle machines auto-stop, and each call is capped at
+`max_tokens` 1500. To harden, add a shared-token header check in `server.js` or put it
+behind Cloudflare Access.
 
 ## Env vars
 

@@ -66,6 +66,40 @@ supabase.table("events").insert({"name": "signup", "user_id": "abc123"}).execute
 rows = supabase.table("events").select("*").eq("user_id", "abc123").execute()
 ```
 
+## DayPilot in this project
+
+DayPilot stores its whole data model in Supabase (5 tables). It is **single-user**, so the
+auth/RLS story is deliberately minimal.
+
+| Table | Role |
+|-------|------|
+| `rules` | The living business rules (category, circle, weekday cadence, emoji, active) |
+| `daily_plans` | One AI-generated schedule per day (`schedule jsonb`) |
+| `daily_logs` | Per-rule completion check-ins |
+| `energy_snapshots` | Daily sleep / energy / circle-score readings |
+| `standing_context` | The rarely-edited goals block |
+
+**Data flow:**
+
+```
+Frontend (GitHub Pages)  --anon key, SELECT only-->  Supabase
+        |                                               ^
+        | POST context                                  | service-role write
+        v                                               |
+Backend (Fly.io: daypilot-rifat)  --/generate-day-->  Claude  --plan-->  daily_plans
+```
+
+- The frontend reads with the **anon key** (RLS allows read); it never holds a write key.
+- The **Fly.io backend** holds the **service-role key** and is the only writer — it upserts
+  each generated plan into `daily_plans`.
+- **MVP default:** the app runs on `localStorage` with no Supabase at all; adopt Supabase
+  when you want cross-device sync.
+
+**Schema & full wiring:** [`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql)
+and the deep-dive in [`4_Formula/database.md`](../4_Formula/database.md). Secrets live in
+Azure Key Vault `dp-kv-deliverypilot` (`supabase-anon-key`, `supabase-service-key`,
+`supabase-access-token`).
+
 ## Pricing
 
 | Tier | Cost |

@@ -1,9 +1,10 @@
 # Fly.io config for the DayPilot generator backend.
-# Deploy:  fly launch --no-deploy  (first time)  then  fly deploy
-# Secrets: fly secrets set ANTHROPIC_API_KEY=... \
-#                          SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
-#                          ALLOW_ORIGIN=https://rifaterdemsahin.github.io
-app = "daypilot-api"
+# DEPLOYED: https://daypilot-rifat.fly.dev  (app "daypilot-rifat", region lhr)
+# Redeploy:  fly deploy --remote-only --app daypilot-rifat
+# Secrets:   fly secrets set ANTHROPIC_API_KEY=... \
+#                            SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
+#                            ALLOW_ORIGIN=https://rifaterdemsahin.github.io
+app = "daypilot-rifat"
 primary_region = "lhr"
 
 [build]
