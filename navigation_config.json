@@ -1,0 +1,34 @@
+{
+  "projectMenu": [
+    { "label": "Home", "url": "index.html" },
+    { "label": "Docs", "url": "markdown_renderer.html?file=2_Environment/README.md" },
+    { "label": "API", "url": "markdown_renderer.html?file=4_Formula/README.md" }
+  ],
+  "debugMenu": [
+    { "label": "1. Real Unknown", "url": "1_Real_Unknown/" },
+    { "label": "   ├─ Kanban Board", "url": "1_Real_Unknown/kanban.md" },
+    { "label": "   ├─ Cost Tracker", "url": "1_Real_Unknown/costs.md" },
+    { "label": "2. Environment", "url": "2_Environment/" },
+    { "label": "   ├─ Architecture", "url": "2_Environment/architecture.md" },
+    { "label": "   ├─ Tools Overview", "url": "2_Environment/tools.md" },
+    { "label": "   ├─ Fly.io (Deployments)", "url": "2_Environment/fly_io.md" },
+    { "label": "   ├─ Supabase (Database)", "url": "2_Environment/supabase.md" },
+    { "label": "   ├─ Axiom (Logs)", "url": "2_Environment/axiom.md" },
+    { "label": "3. Simulation", "url": "3_Simulation/" },
+    { "label": "4. Formula", "url": "4_Formula/" },
+    { "label": "   ├─ Database", "url": "4_Formula/database.md" },
+    { "label": "   ├─ Extensions", "url": "4_Formula/extensions.md" },
+    { "label": "   ├─ Navigation", "url": "4_Formula/navigation.md" },
+    { "label": "   ├─ Logging & Auto-Fix", "url": "4_Formula/logging_and_autofix.md" },
+    { "label": "5. Symbols", "url": "5_Symbols/" },
+    { "label": "6. Semblance", "url": "6_Semblance/" },
+    { "label": "7. Testing Known", "url": "7_Testing_Known/" },
+    { "label": "---", "url": "divider" },
+    { "label": "agents.md", "url": "agents.md" },
+    { "label": "prompts.md", "url": "prompts.md" },
+    { "label": "claude.md", "url": "claude.md" },
+    { "label": "gemini.md", "url": "gemini.md" },
+    { "label": "copilot.md", "url": "copilot.md" },
+    { "label": "kilocode.md", "url": "kilocode.md" }
+  ]
+}
