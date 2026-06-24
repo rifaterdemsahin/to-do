@@ -20,8 +20,8 @@ The DayPilot MVP ([spec](../4_Formula/daypilot_mvp_spec.md)) is built here:
 
 | Path | Description |
 |------|-------------|
-| `app/index.html` | **The app** — static SPA, 4 screens (Today / Rules / Log / Context), mobile-first |
-| `app/app.js` | All logic: localStorage data layer, Rules CRUD, Log/energy capture, the Daily Generator |
+| `app/index.html` | **The app** — static SPA, 5 screens (Today / Calendar / Rules / Log / Context), mobile-first |
+| `app/app.js` | All logic: localStorage data layer, Rules CRUD, Calendar/events, Log/energy capture, the Daily Generator |
 | `app/styles.css` | Dark/glass UI matching the template design tokens |
 | `app/config.example.js` | Copy to `config.js` (gitignored) to wire Supabase + the Fly.io backend |
 | `backend/server.js` | Fly.io generator proxy — holds the Claude key, `POST /generate-day` |
@@ -32,6 +32,13 @@ The DayPilot MVP ([spec](../4_Formula/daypilot_mvp_spec.md)) is built here:
 menu). It works fully offline via `localStorage` and an on-device generator; set
 `backendUrl` in `config.js` to get real Claude-generated schedules. See `backend/README.md`
 to run/deploy the generator.
+
+**Calendar (beyond v0.1 spec):** the Calendar screen adds dated, one-off entries —
+appointments, kids' holidays, vacations (multi-day ranges), and birthdays (annual
+recurrence). These are **fed into the Daily Generator** (`today_events` + a 14-day
+`calendar` window), so the schedule plans around fixed commitments: holidays/vacations
+relax the work routine, birthdays keep the evening clear, appointments are never
+double-booked. Calendar entries also appear inline on the Today timeline.
 
 ## Code Standards
 

@@ -23,6 +23,7 @@
   <!-- ====== Bottom tab nav (mobile-first) ====== -->
   <nav class="tabbar" id="tabbar">
     <button class="tab" data-screen="today"><span>📅</span>Today</button>
+    <button class="tab" data-screen="calendar"><span>📆</span>Calendar</button>
     <button class="tab" data-screen="rules"><span>📜</span>Rules</button>
     <button class="tab" data-screen="log"><span>✅</span>Log</button>
     <button class="tab" data-screen="context"><span>🎯</span>Context</button>
@@ -71,6 +72,41 @@
         <div class="modal-actions">
           <button type="button" class="btn ghost" id="deleteRule" hidden>Delete</button>
           <button type="submit" class="btn primary">Save rule</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====== Calendar event editor modal ====== -->
+  <div class="modal-overlay" id="eventModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <h2>Add to <span id="eventModalDate"></span></h2>
+        <button class="icon-btn" id="eventModalClose" aria-label="Close">✕</button>
+      </div>
+      <form id="eventForm" class="rule-form">
+        <input type="hidden" name="date" />
+        <label>Title<input name="title" required placeholder="Mira's birthday, half-term, Italy trip…" /></label>
+        <div class="row">
+          <label>Type
+            <select name="type" id="eventType">
+              <option value="appointment">📌 Appointment</option>
+              <option value="holiday">🏖️ Kids' holiday</option>
+              <option value="vacation">✈️ Vacation</option>
+              <option value="birthday">🎂 Birthday</option>
+              <option value="other">⭐ Other</option>
+            </select>
+          </label>
+          <label>Emoji<select name="emoji" id="eventEmoji"></select></label>
+        </div>
+        <div class="row">
+          <label>Time (optional)<input name="time" type="time" /></label>
+          <label>Ends (optional)<input name="endDate" type="date" /></label>
+        </div>
+        <label class="checkbox"><input type="checkbox" name="recurring" /> Repeats every year (birthdays, annual holidays)</label>
+        <label>Note<textarea name="note" rows="2" placeholder="e.g. don't schedule deep work — school play this evening"></textarea></label>
+        <div class="modal-actions">
+          <button type="submit" class="btn primary">Add to calendar</button>
         </div>
       </form>
     </div>

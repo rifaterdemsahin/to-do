@@ -17,6 +17,13 @@ FRAMEWORK:
 - Reason from rules, not tasks. Never pad with generic filler.
 - Respect energy: when recent energy/sleep is low or completion has been poor, DOWN-SCOPE.
   Move outer-circle and "likely but not guaranteed" rules to "deprioritised" rather than stacking the day.
+- Respect the CALENDAR. "today_events" are fixed commitments for this date; "calendar" lists
+  upcoming entries (next 14 days). Honour them:
+  * holiday / vacation -> relax routine and work rules (deprioritise "work"/"home"); the day is lighter.
+  * birthday -> acknowledge it warmly in the summary and keep that day's evening clear.
+  * appointment -> plan blocks around its time; never double-book it.
+  Surface fixed events as blocks too (use the event's emoji), and reference relevant upcoming
+  calendar entries in the summary when they should shape today (e.g. "packing for the trip tomorrow").
 - Order blocks sensibly across the clock. Keep the inner circle protected.
 - Be concise and personal in the summary (one "bandwidth note" sentence).
 
@@ -39,6 +46,8 @@ function buildUserMessage(ctx) {
   return `Today: ${ctx.date}, ${dayName(ctx.weekday)}, ${ctx.season}
 Standing goals: ${ctx.goals || "(none provided)"}
 Active rules for today: ${JSON.stringify(ctx.rules || [], null, 0)}
+Today's calendar events: ${JSON.stringify(ctx.today_events || [])}
+Upcoming calendar (next 14 days): ${JSON.stringify(ctx.calendar || [])}
 Last 14 days completion: ${JSON.stringify(ctx.history || [])}
 Recent energy: ${JSON.stringify(ctx.energy || [])}
 

@@ -13,6 +13,10 @@
   const EMOJI_CHOICES = ["⚡","😴","👧","🍳","🧺","🏃","🥗","🕊️","🎬","🟢","🟡","🔴"];
   const CIRCLE_DOT = { inner: "🟢", mid: "🟡", outer: "🔴" };
   const WEEKDAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  // Calendar event types (kids' holidays, vacations, birthdays …) — feed the generator.
+  const TYPE_EMOJI = { appointment: "📌", holiday: "🏖️", vacation: "✈️", birthday: "🎂", other: "⭐" };
+  const EVENT_EMOJI = ["📌","🏖️","✈️","🎂","🎤","🩺","🎉","🏫","🎈","🍽️","📞","🛒","⭐","🎄"];
   // Local-generator time heuristic: base clock hour per category.
   const CATEGORY_TIME = { kids: 7, diet: 7.5, exercise: 8, work: 9.5, home: 18, recovery: 20, sleep: 22.5 };
 
@@ -29,7 +33,7 @@
   const fmtTime = h => `${String(Math.floor(h)).padStart(2,"0")}:${h % 1 ? "30" : "00"}`;
 
   /* ---- Store (localStorage) ---- */
-  const K = { rules: "daypilot.rules", logs: "daypilot.logs", energy: "daypilot.energy", context: "daypilot.context", plans: "daypilot.plans", seeded: "daypilot.seeded" };
+  const K = { rules: "daypilot.rules", logs: "daypilot.logs", energy: "daypilot.energy", context: "daypilot.context", plans: "daypilot.plans", events: "daypilot.events", seeded: "daypilot.seeded" };
   const read = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } };
   const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
   const store = {
@@ -49,7 +53,32 @@
     setContext: c => write(K.context, c),
     plan: date => read(K.plans, {})[date] || null,
     setPlan(date, p) { const all = read(K.plans, {}); all[date] = p; write(K.plans, all); },
+    events: () => read(K.events, []),
+    addEvent(ev) { const all = read(K.events, []); all.push(ev); write(K.events, all); },
+    updateEvent(id, patch) { const all = read(K.events, []); const e = all.find(x => x.id === id); if (e) Object.assign(e, patch); write(K.events, all); },
+    deleteEvent(id) { write(K.events, read(K.events, []).filter(e => e.id !== id)); },
   };
+
+  /* ---- Event occurrence logic (ranges + annual recurrence) ---- */
+  const mmdd = iso => iso.slice(5);
+  function occursOn(ev, iso) {
+    if (ev.recurring === "annual") return mmdd(ev.date) === mmdd(iso); // birthdays / annual holidays
+    if (ev.endDate) return iso >= ev.date && iso <= ev.endDate;        // vacations / multi-day holidays
+    return ev.date === iso;
+  }
+  const eventsForDate = iso => store.events().filter(ev => occursOn(ev, iso))
+    .sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
+  // Upcoming window for the generator: each day in [from, from+days) that has events.
+  function upcomingEvents(fromISO, days = 14) {
+    const out = [];
+    const base = new Date(fromISO + "T12:00:00");
+    for (let i = 0; i < days; i++) {
+      const d = new Date(base); d.setDate(base.getDate() + i);
+      const iso = todayISO(d);
+      eventsForDate(iso).forEach(ev => out.push({ date: iso, type: ev.type, title: ev.title, time: ev.time || null }));
+    }
+    return out;
+  }
 
   /* ---- First-run seed so the app shows something real ---- */
   function seed() {
@@ -70,6 +99,11 @@
       mk("Wind down, lights out", "sleep", "inner", [0,1,2,3,4,5,6]),
     ]);
     store.setContext({ goals: "Ship the DayPilot MVP. Be present for Arya & Mira every morning. Protect sleep and recovery — they're the base of everything else." });
+    // Sample calendar entries — kids' holiday, a vacation range, and a recurring birthday.
+    const iso = (offset) => { const d = new Date(); d.setDate(d.getDate() + offset); return todayISO(d); };
+    store.addEvent({ id: uid(), date: iso(2), endDate: iso(6), type: "holiday", emoji: TYPE_EMOJI.holiday, title: "Kids' half-term break", note: "No school run — mornings are freer." });
+    store.addEvent({ id: uid(), date: iso(20), endDate: iso(27), type: "vacation", emoji: TYPE_EMOJI.vacation, title: "Italy trip", note: "Out of office — pause DeliveryPilot deep work." });
+    store.addEvent({ id: uid(), date: iso(9), type: "birthday", emoji: TYPE_EMOJI.birthday, title: "Arya's birthday", recurring: "annual", note: "Keep the evening clear." });
     localStorage.setItem(K.seeded, "1");
   }
 
@@ -97,9 +131,17 @@
     const avg = energy.length ? energy.reduce((s, e) => s + (e.energy || 3), 0) / energy.length : null;
     const low = avg !== null && avg <= 2.5;
 
+    // Calendar awareness: holidays/vacations relax the routine; birthdays get protected.
+    const todays = eventsForDate(date);
+    const onHoliday = todays.some(e => e.type === "holiday" || e.type === "vacation");
+    const birthday = todays.find(e => e.type === "birthday");
+
     const keep = [], deprioritised = [];
     for (const r of rules) {
-      if (low && (r.circle === "outer" || r.is_likely)) {
+      const restDay = onHoliday && (r.category === "work" || r.category === "home");
+      if (restDay) {
+        deprioritised.push({ title: r.title, reason: `${todays.find(e => e.type === "holiday" || e.type === "vacation").title} — let routine/work slide today` });
+      } else if (low && (r.circle === "outer" || r.is_likely)) {
         deprioritised.push({ title: r.title, reason: `energy low (avg ${avg.toFixed(1)}/5) — ${r.is_likely ? "not guaranteed today" : "outer circle can wait"}` });
       } else keep.push(r);
     }
@@ -111,10 +153,12 @@
       .map(({ h, r }) => ({ time: fmtTime(h), emoji: r.emoji, title: r.title, circle: r.circle, rule_id: r.id }));
 
     let summary;
-    if (avg === null) summary = `${WEEKDAYS[wd]} — ${blocks.length} rules on deck. Log your energy tonight so tomorrow can adapt.`;
+    if (onHoliday) { const h = todays.find(e => e.type === "holiday" || e.type === "vacation"); summary = `${h.type === "vacation" ? "On vacation" : "Kids off"} — ${h.title}. Routine relaxed; keeping just the inner circle.`; }
+    else if (avg === null) summary = `${WEEKDAYS[wd]} — ${blocks.length} rules on deck. Log your energy tonight so tomorrow can adapt.`;
     else if (low) summary = `Low-bandwidth ${WEEKDAYS[wd]} (energy ${avg.toFixed(1)}/5). Trimmed to the inner circle — protect recovery, let the rest slide.`;
     else if (avg >= 4) summary = `Strong ${WEEKDAYS[wd]} (energy ${avg.toFixed(1)}/5). Full slate — good day to push the mid circle.`;
     else summary = `${WEEKDAYS[wd]} at a steady pace (energy ${avg.toFixed(1)}/5). ${blocks.length} blocks, ${deprioritised.length} parked.`;
+    if (birthday) summary += ` 🎂 ${birthday.title} today — keep the evening clear.`;
 
     return { summary, blocks, deprioritised, generated_by: "local" };
   }
@@ -128,6 +172,7 @@
         goals: store.context().goals,
         rules: rulesForToday(wd),
         history: completionHistory(), energy: recentEnergy(),
+        today_events: eventsForDate(date), calendar: upcomingEvents(date, 14),
       }),
     });
     if (!res.ok) throw new Error(`backend ${res.status}`);
@@ -153,25 +198,37 @@
       el("h1", {}, "Today"),
       el("button", { className: "btn primary", id: "genBtn", onclick: doGenerate }, plan ? "Regenerate" : "Generate day")));
 
-    if (!plan) {
-      view.append(el("div", { className: "empty" }, "No plan yet. Tap ", el("strong", {}, "Generate day"), " and DayPilot will reason from your active rules, energy and history."));
+    const events = eventsForDate(date);
+    if (!plan && !events.length) {
+      view.append(el("div", { className: "empty" }, "No plan yet. Tap ", el("strong", {}, "Generate day"), " and DayPilot will reason from your active rules, energy, history and calendar."));
       return;
     }
-    view.append(el("div", { className: "card glow summary" },
+    if (plan) view.append(el("div", { className: "card glow summary" },
       el("span", { className: "pill" }, (plan.generated_by === "claude" ? "🎬 Claude" : "⚙️ local") + " · " + season() + " · " + WEEKDAYS[new Date(date+"T12:00:00").getDay()]),
       el("div", {}, plan.summary)));
 
-    plan.blocks.forEach(b => {
-      const done = log[b.rule_id]?.completed;
-      const node = el("div", { className: "block" + (done ? " done" : ""), onclick: () => { if (b.rule_id) { store.setLog(date, b.rule_id, { completed: !done }); screenToday(); } } },
-        el("span", { className: "time" }, b.time || ""),
-        el("span", { className: "emoji" }, b.emoji || "•"),
-        el("span", { className: "title" }, b.title),
-        el("span", { className: "dot " + (b.circle || "mid") }));
-      view.append(node);
+    // Merge generated rule-blocks with fixed calendar events, ordered by time.
+    const items = [];
+    if (plan) plan.blocks.forEach(b => items.push({ kind: "rule", ...b }));
+    events.forEach(e => items.push({ kind: "event", time: e.time || "", emoji: e.emoji || TYPE_EMOJI[e.type] || "📌", title: e.title, etype: e.type }));
+    items.sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
+    items.forEach(it => {
+      if (it.kind === "rule") {
+        const done = log[it.rule_id]?.completed;
+        view.append(el("div", { className: "block" + (done ? " done" : ""), onclick: () => { if (it.rule_id) { store.setLog(date, it.rule_id, { completed: !done }); screenToday(); } } },
+          el("span", { className: "time" }, it.time || ""),
+          el("span", { className: "emoji" }, it.emoji || "•"),
+          el("span", { className: "title" }, it.title),
+          el("span", { className: "dot " + (it.circle || "mid") })));
+      } else {
+        view.append(el("div", { className: "block event" },
+          el("span", { className: "time" }, it.time || "—"),
+          el("span", { className: "emoji" }, it.emoji),
+          el("span", { className: "title" }, it.title, el("span", { className: "ev-tag" }, it.etype))));
+      }
     });
 
-    if (plan.deprioritised?.length) {
+    if (plan?.deprioritised?.length) {
       view.append(el("div", { className: "section-label" }, "Deprioritised"));
       plan.deprioritised.forEach(d => view.append(el("div", { className: "block deprio" },
         el("span", { className: "emoji" }, "💤"),
@@ -270,6 +327,83 @@
     view.append(el("div", { className: "muted", style: "text-align:center;font-size:.8rem" }, "Saved automatically."));
   }
 
+  /* ===================== Calendar ===================== */
+  let calCursor = new Date();           // month being viewed
+  let calSelected = todayISO();         // selected day
+
+  function screenCalendar() {
+    const y = calCursor.getFullYear(), m = calCursor.getMonth();
+    view.innerHTML = "";
+    view.append(el("div", { className: "screen-head" },
+      el("h1", {}, "Calendar"),
+      el("div", { className: "cal-nav" },
+        el("button", { className: "icon-btn", onclick: () => { calCursor = new Date(y, m - 1, 1); screenCalendar(); } }, "‹"),
+        el("span", { className: "cal-month" }, `${MONTHS[m]} ${y}`),
+        el("button", { className: "icon-btn", onclick: () => { calCursor = new Date(y, m + 1, 1); screenCalendar(); } }, "›"))));
+
+    const grid = el("div", { className: "cal-grid" });
+    WEEKDAYS.forEach(d => grid.append(el("div", { className: "cal-dow" }, d)));
+    const firstDow = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    for (let i = 0; i < firstDow; i++) grid.append(el("div", { className: "cal-cell empty" }));
+    for (let d = 1; d <= daysInMonth; d++) {
+      const iso = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const evs = eventsForDate(iso);
+      const cls = "cal-cell" + (iso === todayISO() ? " today" : "") + (iso === calSelected ? " sel" : "");
+      grid.append(el("div", { className: cls, onclick: () => { calSelected = iso; screenCalendar(); } },
+        el("span", {}, String(d)),
+        el("span", { className: "cal-dots" },
+          store.plan(iso) ? el("i", { className: "dot-plan" }) : "",
+          evs.length ? el("i", { className: "dot-ev" }) : "")));
+    }
+    view.append(grid);
+
+    // Selected-day panel
+    const selDate = new Date(calSelected + "T12:00:00");
+    view.append(el("div", { className: "section-label" }, selDate.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })));
+    const evs = eventsForDate(calSelected);
+    if (!evs.length) view.append(el("div", { className: "muted", style: "margin:2px 2px 12px" }, "No calendar entries on this day."));
+    evs.forEach(e => view.append(el("div", { className: "block event" },
+      el("span", { className: "time" }, e.time || "—"),
+      el("span", { className: "emoji" }, e.emoji || TYPE_EMOJI[e.type] || "📌"),
+      el("span", { className: "title" }, e.title,
+        el("span", { className: "ev-tag" }, e.type + (e.recurring ? " · yearly" : "") + (e.endDate ? " · multi-day" : "")),
+        e.note ? el("div", { className: "reason" }, e.note) : ""),
+      el("button", { className: "icon-btn", title: "Delete", onclick: () => { store.deleteEvent(e.id); screenCalendar(); toast("Removed from calendar"); } }, "🗑"))));
+    view.append(el("button", { className: "btn primary block", style: "margin-top:6px", onclick: () => openEventModal(calSelected) }, "＋ Add to this day"));
+  }
+
+  /* ===================== Event editor modal ===================== */
+  const eventModal = $("#eventModal"), eventForm = $("#eventForm");
+  function buildEventEmoji(sel) {
+    const box = $("#eventEmoji"); box.innerHTML = "";
+    EVENT_EMOJI.forEach(e => box.append(el("option", { value: e, selected: e === sel }, e)));
+  }
+  function openEventModal(date) {
+    eventForm.reset();
+    eventForm.date.value = date;
+    $("#eventModalDate").textContent = new Date(date + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    buildEventEmoji(TYPE_EMOJI.appointment);
+    eventModal.hidden = false;
+  }
+  $("#eventType").addEventListener("change", e => buildEventEmoji(TYPE_EMOJI[e.target.value]));
+  $("#eventModalClose").onclick = () => (eventModal.hidden = true);
+  eventModal.addEventListener("click", e => { if (e.target === eventModal) eventModal.hidden = true; });
+  eventForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const ev = {
+      id: uid(), date: eventForm.date.value, type: eventForm.type.value,
+      emoji: eventForm.emoji.value, title: eventForm.title.value.trim(),
+      time: eventForm.time.value || "", note: eventForm.note.value.trim(),
+    };
+    if (eventForm.endDate.value && eventForm.endDate.value >= ev.date) ev.endDate = eventForm.endDate.value;
+    if (eventForm.recurring.checked) ev.recurring = "annual";
+    store.addEvent(ev);
+    eventModal.hidden = true;
+    toast("Added to calendar");
+    current === "calendar" ? screenCalendar() : screenToday();
+  });
+
   /* ===================== Rule editor modal ===================== */
   const modal = $("#modal"), form = $("#ruleForm");
   function openModal(rule) {
@@ -334,7 +468,7 @@
   }
 
   /* ===================== Router ===================== */
-  const screens = { today: screenToday, rules: screenRules, log: screenLog, context: screenContext };
+  const screens = { today: screenToday, calendar: screenCalendar, rules: screenRules, log: screenLog, context: screenContext };
   function go(name) {
     current = name;
     document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.screen === name));
