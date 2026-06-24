@@ -14,15 +14,24 @@ This folder contains the **core source code and implementation files**. Everythi
 - **GitHub Actions workflows** — CI/CD pipeline definitions
 - **Static assets** — JS, CSS bundles used by the app
 
-## Files
+## DayPilot implementation
 
-| File | Description |
+The DayPilot MVP ([spec](../4_Formula/daypilot_mvp_spec.md)) is built here:
+
+| Path | Description |
 |------|-------------|
-| `main.py` | Primary application entry point |
-| `Dockerfile` | Container build definition |
-| `docker-compose.yml` | Multi-service orchestration |
-| `requirements.txt` | Python dependencies |
-| `.github/workflows/` | CI/CD pipeline definitions |
+| `app/index.html` | **The app** — static SPA, 4 screens (Today / Rules / Log / Context), mobile-first |
+| `app/app.js` | All logic: localStorage data layer, Rules CRUD, Log/energy capture, the Daily Generator |
+| `app/styles.css` | Dark/glass UI matching the template design tokens |
+| `app/config.example.js` | Copy to `config.js` (gitignored) to wire Supabase + the Fly.io backend |
+| `backend/server.js` | Fly.io generator proxy — holds the Claude key, `POST /generate-day` |
+| `backend/Dockerfile`, `backend/fly.toml` | Container build + Fly deploy config |
+| `../supabase/migrations/0001_init.sql` | Postgres schema (5 tables, single-owner RLS) |
+
+**Run the app:** open `app/index.html` (or the **🎬 DayPilot App** link in the project
+menu). It works fully offline via `localStorage` and an on-device generator; set
+`backendUrl` in `config.js` to get real Claude-generated schedules. See `backend/README.md`
+to run/deploy the generator.
 
 ## Code Standards
 

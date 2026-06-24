@@ -3,6 +3,9 @@
 .env.local
 .env.*.local
 
+# DayPilot frontend runtime config (holds Supabase anon key / backend URL)
+5_Symbols/app/config.js
+
 # Dependency directories
 node_modules/
 jspm_packages/

@@ -1,0 +1,17 @@
+{
+  "name": "daypilot-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DayPilot generator proxy — holds the Claude key, exposes /generate-day.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1"
+  }
+}

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f19" />
+  <meta name="description" content="DayPilot — a rules-driven daily planner. Define living business rules; AI proposes the day." />
+  <title>🎬 DayPilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ====== App shell ====== -->
+  <header class="app-header">
+    <div class="brand"><span class="brand-mark">🎬</span> DayPilot</div>
+    <div class="brand-sub" id="dateLabel"></div>
+  </header>
+
+  <main id="view" class="view"><!-- screens render here --></main>
+
+  <!-- ====== Bottom tab nav (mobile-first) ====== -->
+  <nav class="tabbar" id="tabbar">
+    <button class="tab" data-screen="today"><span>📅</span>Today</button>
+    <button class="tab" data-screen="rules"><span>📜</span>Rules</button>
+    <button class="tab" data-screen="log"><span>✅</span>Log</button>
+    <button class="tab" data-screen="context"><span>🎯</span>Context</button>
+  </nav>
+
+  <!-- ====== Rule editor modal ====== -->
+  <div class="modal-overlay" id="modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <h2 id="modalTitle">New rule</h2>
+        <button class="icon-btn" id="modalClose" aria-label="Close">✕</button>
+      </div>
+      <form id="ruleForm" class="rule-form">
+        <input type="hidden" name="id" />
+        <label>Title<input name="title" required placeholder="Make breakfast for the girls" /></label>
+        <div class="row">
+          <label>Category
+            <select name="category" id="catSelect">
+              <option value="kids">kids 👧</option>
+              <option value="sleep">sleep 😴</option>
+              <option value="diet">diet 🥗</option>
+              <option value="exercise">exercise 🏃</option>
+              <option value="recovery">recovery 🕊️</option>
+              <option value="work">work 🎬</option>
+              <option value="home">home 🧺</option>
+            </select>
+          </label>
+          <label>Circle
+            <select name="circle">
+              <option value="inner">inner 🟢</option>
+              <option value="mid">mid 🟡</option>
+              <option value="outer">outer 🔴</option>
+            </select>
+          </label>
+        </div>
+        <label>Emoji
+          <div class="emoji-picker" id="emojiPicker"></div>
+          <input type="hidden" name="emoji" id="emojiInput" />
+        </label>
+        <fieldset class="weekdays">
+          <legend>Cadence (weekdays)</legend>
+          <div class="weekday-chips" id="weekdayChips"></div>
+        </fieldset>
+        <label class="checkbox"><input type="checkbox" name="is_likely" /> Likely but not guaranteed (e.g. bus day)</label>
+        <label>Notes<textarea name="notes" rows="2" placeholder="Free text the AI can read for nuance"></textarea></label>
+        <div class="modal-actions">
+          <button type="button" class="btn ghost" id="deleteRule" hidden>Delete</button>
+          <button type="submit" class="btn primary">Save rule</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <!-- config.js (gitignored) overrides config.example.js if present -->
+  <script src="config.example.js"></script>
+  <script>
+    // Try to load the real config.js; ignore if absent (pure-local mode).
+    const s = document.createElement("script");
+    s.src = "config.js"; s.onerror = () => {}; document.head.appendChild(s);
+  </script>
+  <script src="app.js" defer></script>
+</body>
+</html>
