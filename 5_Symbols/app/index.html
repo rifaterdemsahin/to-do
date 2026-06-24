@@ -15,7 +15,10 @@
   <!-- ====== App shell ====== -->
   <header class="app-header">
     <div class="brand"><span class="brand-mark">🎬</span> DayPilot</div>
-    <div class="brand-sub" id="dateLabel"></div>
+    <div class="header-right">
+      <div class="brand-sub" id="dateLabel"></div>
+      <a class="backend-link" id="backendLink" target="_blank" rel="noopener" title="Generator backend"></a>
+    </div>
   </header>
 
   <main id="view" class="view"><!-- screens render here --></main>
@@ -110,6 +113,18 @@
         </div>
       </form>
     </div>
+  </div>
+
+  <!-- ====== Lock screen (password gate) ====== -->
+  <div class="lock-overlay" id="lockScreen" hidden>
+    <form class="lock-card" id="lockForm">
+      <div class="lock-brand"><span>🎬</span> DayPilot</div>
+      <p class="lock-sub">Enter password to continue</p>
+      <input type="password" id="lockInput" placeholder="Password" autocomplete="current-password" />
+      <button class="btn primary block" type="submit">Unlock</button>
+      <div class="lock-err" id="lockErr" hidden>Incorrect password — try again.</div>
+      <a class="lock-link" id="lockBackendLink" target="_blank" rel="noopener">prod backend ↗</a>
+    </form>
   </div>
 
   <div class="toast" id="toast" hidden></div>

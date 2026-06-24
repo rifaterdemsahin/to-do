@@ -36,7 +36,23 @@ h1, h2, h3, .brand { font-family: "Outfit", sans-serif; }
 }
 .brand { font-size: 1.4rem; font-weight: 700; }
 .brand-mark { margin-right: 4px; }
+.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .brand-sub { color: var(--muted); font-size: .85rem; }
+.backend-link { color: var(--accent-2); font-size: .72rem; text-decoration: none; opacity: .85; }
+.backend-link::before { content: "● "; }
+.backend-link:hover { text-decoration: underline; }
+.backend-link.local { color: var(--muted); }
+
+/* ---- Lock screen ---- */
+.lock-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(900px 500px at 50% -10%, #161c2d 0%, var(--bg-dark) 60%); }
+.lock-overlay[hidden] { display: none; }
+.lock-card { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 12px; text-align: center; background: var(--bg-card); border: 1px solid var(--border-glow); border-radius: 20px; padding: 28px 22px; }
+.lock-brand { font-family: "Outfit", sans-serif; font-weight: 700; font-size: 1.6rem; }
+.lock-sub { color: var(--muted); margin: 0 0 4px; font-size: .9rem; }
+.lock-card input { text-align: center; }
+.lock-err { color: var(--red); font-size: .82rem; }
+.lock-link { color: var(--accent-2); font-size: .74rem; text-decoration: none; margin-top: 4px; opacity: .8; }
+.lock-link:hover { text-decoration: underline; }
 
 /* ---- View container ---- */
 .view { max-width: var(--maxw); margin: 0 auto; padding: 8px 16px 24px; }

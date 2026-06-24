@@ -477,8 +477,53 @@
   }
   $("#tabbar").addEventListener("click", e => { const b = e.target.closest(".tab"); if (b) go(b.dataset.screen); });
 
-  /* ===================== Boot ===================== */
-  seed();
-  $("#dateLabel").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
-  go("today");
+  /* ===================== Backend link (header + lock screen) ===================== */
+  function showBackendLinks() {
+    const host = CFG.backendUrl ? CFG.backendUrl.replace(/^https?:\/\//, "").replace(/\/$/, "") : "";
+    const a = $("#backendLink");
+    if (host) { a.textContent = host; a.href = CFG.backendUrl; a.classList.remove("local"); }
+    else { a.textContent = "on-device generator"; a.removeAttribute("href"); a.classList.add("local"); }
+    const lb = $("#lockBackendLink");
+    if (CFG.backendUrl) { lb.href = CFG.backendUrl; lb.textContent = host + " ↗"; lb.hidden = false; }
+    else lb.hidden = true;
+  }
+
+  /* ===================== Auth gate ===================== */
+  // SHA-256 of the app password. The plaintext lives ONLY in Azure Key Vault
+  // (dp-kv-deliverypilot / daypilot-app-password) — never in this repo.
+  // NOTE: a static-site gate is a deterrent, not real security — anyone can read
+  // this source or call the backend directly. For real access control put the app
+  // behind Cloudflare Access or a server login. See backend/README.md.
+  const AUTH_HASH = "a2cd78ac12ddf155751b114f4b8b58057c68a842efa2c4e11a86c25efbe30bb4";
+  async function sha256(str) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  function boot() {
+    seed();
+    $("#dateLabel").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+    showBackendLinks();
+    go("today");
+  }
+
+  /* ===================== Gate + start ===================== */
+  showBackendLinks();
+  if (sessionStorage.getItem("daypilot.auth") === "ok") {
+    boot();
+  } else {
+    const lock = $("#lockScreen"), form = $("#lockForm"), input = $("#lockInput"), err = $("#lockErr");
+    lock.hidden = false;
+    setTimeout(() => input.focus(), 50);
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      if ((await sha256(input.value)) === AUTH_HASH) {
+        sessionStorage.setItem("daypilot.auth", "ok");
+        lock.hidden = true;
+        boot();
+      } else {
+        err.hidden = false; input.value = ""; input.focus();
+      }
+    });
+  }
 })();
